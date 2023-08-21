@@ -199,20 +199,20 @@ add_library(${TARGET} STATIC
     )
 
 target_include_directories(${TARGET} PUBLIC
-    ${MODULE_DIR}
-    Drivers/CMSIS/Include
-    Drivers/CMSIS/Device/ST/STM32H7xx/Include
-    Drivers/STM32H7xx_HAL_Driver/Inc
-    Drivers/STM32H7xx_HAL_Driver/Inc/Legacy
-    Middlewares/ST/STM32_USB_Device_Library/Core/Inc
-    Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
-    Middlewares/ST/STM32_USB_Host_Library/Core/Inc
-    Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc
-    Middlewares/Third_Party/FatFs/src
-    src
-    src/sys
-    src/usbd
-    src/usbh
+    $<BUILD_INTERFACE:${MODULE_DIR}>
+    $<BUILD_INTERFACE:${MODULE_DIR}/sys>
+    $<BUILD_INTERFACE:${MODULE_DIR}/usbd>
+    $<BUILD_INTERFACE:${MODULE_DIR}/usbh>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/ST/STM32_USB_Device_Library/Core/Inc>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/ST/STM32_USB_Host_Library/Core/Inc>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FatFs/src>
+    $<INSTALL_INTERFACE:include/${target}>
     )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -221,3 +221,51 @@ set_target_properties(${TARGET} PROPERTIES
   C_STANDARD 11
   C_STANDARD_REQUIRED
   )
+
+# Install library
+install(TARGETS ${TARGET} EXPORT daisyTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+# Install headers
+install(DIRECTORY ${MODULE_DIR}/
+    DESTINATION include/${TARGET}
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+# Export targets 
+export(EXPORT daisyTargets 
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/daisyTargets.cmake"
+  NAMESPACE daisy::
+)
+
+set(CONFIG_INSTALL_DIR "lib/cmake/${TARGET}")
+
+# Generate daisyConfig.cmake
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_LIST_DIR}/cmake/daisyConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/daisyConfig.cmake
+    INSTALL_DESTINATION cmake
+)
+
+# Install daisyTargets.cmake
+install(EXPORT daisyTargets
+    FILE daisyTargets.cmake
+    NAMESPACE daisy::
+    DESTINATION ${CONFIG_INSTALL_DIR}
+)
+
+# Install daisyConfig.cmake 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/daisyConfig.cmake
+              ${CMAKE_CURRENT_LIST_DIR}/cmake/default_build.cmake
+    DESTINATION ${CONFIG_INSTALL_DIR}
+)
+
+# install toolchain
+install(FILES ${CMAKE_CURRENT_LIST_DIR}/cmake/toolchains/stm32h750xx.cmake
+    DESTINATION ${CONFIG_INSTALL_DIR}/toolchains
+)
